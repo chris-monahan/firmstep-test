@@ -4,7 +4,7 @@ namespace QueueApp;
 class Database {
   
   private $elementNames = ["queue"];
-  private $filterNames = ["type", "service", "organization", "firstName", "lastName"];
+  private $filterNames = ["type", "service", "organization", "firstName", "lastName", "day"];
   
   private $ourPDO;
   
@@ -34,6 +34,7 @@ class Database {
   private function setupPDO(){
     try{
       $this->ourPDO = new \PDO ("mysql:host=localhost;dbname=firmstep_test","root","");
+      $this->ourPDO->setAttribute( \PDO::ATTR_ERRMODE, \PDO::ERRMODE_WARNING );
     } 
     catch (PDOException $e) {
       print "Database error: " . $e->getMessage() . "<br/>";
@@ -42,12 +43,20 @@ class Database {
   }
   
   public function addFilterParamsSQL($SQL, $filter){
-    if($filter !== null){
+    if(is_array($filter) && 
+       count($filter) !== 0 ){
      
       $SQL .= " WHERE ";
       foreach($filter as $fieldName => $param){
         if ($this->checkFilterNames($fieldName)){
-          $SQL .= " $fieldName = :$fieldName";
+          
+          //day is a special case
+          if ($fieldName === "day"){
+            $SQL .= "queuedDate >= :day AND queuedDate < :day + INTERVAL 1 DAY";
+          } else{
+            $SQL .= " $fieldName = :$fieldName";
+          }
+          
         }
       }
       
@@ -58,9 +67,10 @@ class Database {
   public function executeSelectAndFetchAll($SQL, $filter){
     $stmt = $this->ourPDO->prepare($SQL);
     
-    if($filter !== null){
+    if(is_array($filter) && 
+       count($filter) !== 0 ) {
        foreach ($filter as $fieldName => $param){
-         if ($this->checkFilterNames($fileName)){
+         if ($this->checkFilterNames($fieldName)){
            $stmt->bindValue(":".$fieldName, $param);
          }
        }
@@ -68,7 +78,7 @@ class Database {
     }
     
     $stmt->execute();
-    $data = $stmt->fetchAll();
+    $data = $stmt->fetchAll(\PDO::FETCH_ASSOC);
     //var_dump($filter);
     //var_dump($data);
     
@@ -89,7 +99,7 @@ class Database {
       $SQL .= ";";
       try {
         //var_dump($SQL);
-         $this->executeSelectAndFetchAll($SQL,$filter);
+        return $this->executeSelectAndFetchAll($SQL,$filter);
       } 
       catch (PDOException $e) {
         print "Database error: " . $e->getMessage() . "<br/>";
@@ -110,9 +120,6 @@ class Database {
       $count = 0;
       $fieldString = "";
       $dataString = "";
-	  
-	  $fieldString .= "queuedDate, ";
-	  $dataString .= "now(), ";
       
       foreach ($elementData as $fieldName => $data){
         
@@ -125,13 +132,14 @@ class Database {
           $valuesString .= ", ";
         }
       }
-	  
       
       $SQL = "INSERT into $ourElementName (".$fieldString.") VALUES (".$valuesString.");";
+      var_dump($SQL);
       
-      $stmt = $this->ourPDO->prepare($sql);
+      $stmt = $this->ourPDO->prepare($SQL);
       
       foreach($elementData as $fieldName => $data){
+       
         $stmt->bindValue(":".$fieldName, $data);
       }
       

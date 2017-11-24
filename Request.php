@@ -25,6 +25,7 @@ class Request{
     $this->endpoint = $this->pathArray[0];
     $this->body = file_get_contents('php://input');
     
+    //var_dump($this);
     
     $this->bodyParsed = json_decode($this->body, true);
     
@@ -44,7 +45,7 @@ class Request{
     }
   
     
-    //var_dump($this);
+    var_dump($this);
   }
   
   public function __get($name){
