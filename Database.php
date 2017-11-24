@@ -110,6 +110,9 @@ class Database {
       $count = 0;
       $fieldString = "";
       $dataString = "";
+	  
+	  $fieldString .= "queuedDate, ";
+	  $dataString .= "now(), ";
       
       foreach ($elementData as $fieldName => $data){
         
@@ -122,6 +125,7 @@ class Database {
           $valuesString .= ", ";
         }
       }
+	  
       
       $SQL = "INSERT into $ourElementName (".$fieldString.") VALUES (".$valuesString.");";
       
